@@ -1,0 +1,153 @@
+// A SQL column value that represents the underlying database type.
+variant value {
+    null,
+    boolean(bool),
+    int8(s8),
+    int16(s16),
+    int32(s32),
+    int64(s64),
+    uint8(u8),
+    uint16(u16),
+    uint32(u32),
+    uint64(u64),
+    floating32(float32),
+    floating64(float64),
+    str(string),
+    bytes(list<u8>),
+    // Raw binary representation of value that can not be represented by other variants.
+    raw(list<u8>),
+}
+
+variant value-type {
+    boolean,
+    int16,
+    int32,
+    int64,
+    uint16,
+    uint32,
+    uint64,
+    floating32,
+    floating64,
+    str,
+    bytes,
+    json,
+    custom(custom-type),
+}
+
+record custom-type {
+    name: string,
+}
+
+record column-meta {
+    type-name: string,
+    name: string,
+}
+
+record value-map-item {
+    key: string,
+    value: value,
+}
+
+type value-map = list<value-map-item>
+
+record pool-options {
+    max-connections: option<u32>,
+    // Idle timeout in seconds.
+    idle-timeout: option<u32>,
+}
+
+record sql-error {
+    code-numeric: option<s32>,
+    code-text: option<string>,
+    message: string,
+    // Additional driver-specific error information.
+    extra: option<value-map>,
+}
+
+load-driver: func(driver: string) -> expected<driver, sql-error>
+
+
+resource driver {
+    connect-uri: func(uri: string) -> expected<connection, sql-error>
+    connect-args: func(args: value-map) -> expected<connection, sql-error>
+
+    open-pool-uri: func(uri: string, options: option<pool-options>) -> expected<db, sql-error>
+    open-pool-args: func(args: value-map, options: option<pool-options>) -> expected<db, sql-error>
+}
+
+resource db {
+    connection: func() -> expected<connection, sql-error>
+
+    execute: func(query: string, args: list<value>) -> expected<unit, sql-error>
+    query: func(query: string, args: list<value>) -> expected<rows, sql-error>
+}
+
+resource connection {
+    execute: func(query: string, args: list<value>) -> expected<unit, sql-error>
+    query: func(query: string, args: list<value>) -> expected<rows, sql-error>
+    prepare: func(query: string) -> expected<prepared-statement, sql-error>
+}
+
+resource rows {
+    // Get name and type information for the columns.
+    columns: func() -> expected<list<column-meta>, sql-error>
+
+    // Retrieve the next row.
+    // Returns an empty option if all rows have been read.
+    next: func() -> expected<option<row>, sql-error>
+
+    // Retrieve the next row as a list of values.
+    next-values: func() -> expected<option<list<value>>, sql-error>
+
+    values: func() -> expected<list<list<value>>, sql-error>
+
+    close: func() -> expected<unit, sql-error>
+}
+
+variant row-error {
+    row-closed,
+    invalid-type,
+    invalid-index,
+    value-is-null,
+}
+
+resource row {
+    // TODO: should get-T return option<T> instead of having get-optional-T methods?
+
+    get-bool: func(index: u32) -> expected<bool, sql-error>
+    get-int8: func(index: u32) -> expected<s8, sql-error>
+    get-int16: func(index: u32) -> expected<s16, sql-error>
+    get-int32: func(index: u32) -> expected<s32, sql-error>
+    get-int64: func(index: u64) -> expected<s64, sql-error>
+    get-uint8: func(index: u32) -> expected<u8, sql-error>
+    get-uint16: func(index: u32) -> expected<u16, sql-error>
+    get-uint32: func(index: u32) -> expected<u32, sql-error>
+    get-uint64: func(index: u64) -> expected<u64, sql-error>
+    get-float32: func(index: u32) -> expected<float32, sql-error>
+    get-float64: func(index: u32) -> expected<float64, sql-error>
+    get-string: func(index: u32) -> expected<string, sql-error>
+    get-bytes: func(index: u32) -> expected<list<u8>, sql-error>
+    get-raw: func(index: u32) -> expected<list<u8>, sql-error>
+
+    get-optional-bool: func(index: u32) -> expected<option<bool>, sql-error>
+    get-optional-int8: func(index: u32) -> expected<option<s8>, sql-error>
+    get-optional-int16: func(index: u32) -> expected<option<s16>, sql-error>
+    get-optional-int32: func(index: u32) -> expected<option<s32>, sql-error>
+    get-optional-int64: func(index: u64) -> expected<option<s64>, sql-error>
+    get-optional-uint8: func(index: u32) -> expected<option<u8>, sql-error>
+    get-optional-uint16: func(index: u32) -> expected<option<u16>, sql-error>
+    get-optional-uint32: func(index: u32) -> expected<option<u32>, sql-error>
+    get-optional-uint64: func(index: u64) -> expected<option<u64>, sql-error>
+    get-optional-float32: func(index: u32) -> expected<option<float32>, sql-error>
+    get-optional-float64: func(index: u32) -> expected<option<float64>, sql-error>
+    get-optional-string: func(index: u32) -> expected<option<string>, sql-error>
+    get-optional-bytes: func(index: u32) -> expected<option<list<u8>>, sql-error>
+    get-optional-raw: func(index: u32) -> expected<option<list<u8>>, sql-error>
+
+    get-value: func(index: u32) -> expected<value, sql-error>
+}
+
+resource prepared-statement {
+    execute: func(args: list<value>) -> expected<unit, sql-error>
+    query: func(args: list<value>) -> expected<rows, sql-error>
+}

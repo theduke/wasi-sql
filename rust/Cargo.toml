@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "./wasi_sql",
+    "./wasi_sql_wasmtime",
+]

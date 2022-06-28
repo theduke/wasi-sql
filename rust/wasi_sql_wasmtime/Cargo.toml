@@ -1,0 +1,23 @@
+[package]
+name = "wasi_sql_wasmtime"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+# TODO: remove! default should be empty, only for testing
+default = ["sqlite"]
+
+sqlite = ["rusqlite", "r2d2", "r2d2_sqlite"]
+
+[dependencies]
+r2d2 = { version = "0.8.10", optional = true }
+r2d2_sqlite = { version = "0.20.0", optional = true }
+# FIXME: remove bundled, just for testing
+rusqlite = { version = "0.27.0", optional = true, features = ["bundled"] }
+wasmtime = { version = "0.38.1", default-features = false }
+wit-bindgen-wasmtime = { git = "https://github.com/bytecodealliance/wit-bindgen.git", version = "0.1.0" }
+
+[dev-dependencies]
+wasmtime-wasi = "0.38.1"
