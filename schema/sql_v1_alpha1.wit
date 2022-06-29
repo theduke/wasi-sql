@@ -18,6 +18,8 @@ variant value {
     raw(list<u8>),
 }
 
+// The type of a SQL value.
+// Used when retrieving column types of a query.
 variant value-type {
     boolean,
     int16,
@@ -34,15 +36,18 @@ variant value-type {
     custom(custom-type),
 }
 
+// A database specific custom type.
 record custom-type {
     name: string,
 }
 
+// Metadata for a column in a query.
 record column-meta {
     type-name: string,
     name: string,
 }
 
+// Particular item in a map.
 record value-map-item {
     key: string,
     value: value,
@@ -50,12 +55,14 @@ record value-map-item {
 
 type value-map = list<value-map-item>
 
+// Pool configuration options.
 record pool-options {
     max-connections: option<u32>,
     // Idle timeout in seconds.
     idle-timeout: option<u32>,
 }
 
+// Generic SQL error.
 record sql-error {
     code-numeric: option<s32>,
     code-text: option<string>,
@@ -64,9 +71,10 @@ record sql-error {
     extra: option<value-map>,
 }
 
+// Get a resource handle for a particular driver.
 load-driver: func(driver: string) -> expected<driver, sql-error>
 
-
+// Driver that allows connecting to a database.
 resource driver {
     connect-uri: func(uri: string) -> expected<connection, sql-error>
     connect-args: func(args: value-map) -> expected<connection, sql-error>
@@ -75,6 +83,7 @@ resource driver {
     open-pool-args: func(args: value-map, options: option<pool-options>) -> expected<db, sql-error>
 }
 
+// A shared database with a connection pool.
 resource db {
     connection: func() -> expected<connection, sql-error>
 
@@ -82,12 +91,20 @@ resource db {
     query: func(query: string, args: list<value>) -> expected<rows, sql-error>
 }
 
+// A database connection.
 resource connection {
     execute: func(query: string, args: list<value>) -> expected<unit, sql-error>
     query: func(query: string, args: list<value>) -> expected<rows, sql-error>
     prepare: func(query: string) -> expected<prepared-statement, sql-error>
 }
 
+// A prepared statement.
+resource prepared-statement {
+    execute: func(args: list<value>) -> expected<unit, sql-error>
+    query: func(args: list<value>) -> expected<rows, sql-error>
+}
+
+// Row iterator returned by a query.
 resource rows {
     // Get name and type information for the columns.
     columns: func() -> expected<list<column-meta>, sql-error>
@@ -104,6 +121,8 @@ resource rows {
     close: func() -> expected<unit, sql-error>
 }
 
+// Error that occurs when retrieving column values of a row.
+// (currently unused)
 variant row-error {
     row-closed,
     invalid-type,
@@ -111,6 +130,7 @@ variant row-error {
     value-is-null,
 }
 
+// A single database row returned by a query.
 resource row {
     // TODO: should get-T return option<T> instead of having get-optional-T methods?
 
@@ -147,7 +167,3 @@ resource row {
     get-value: func(index: u32) -> expected<value, sql-error>
 }
 
-resource prepared-statement {
-    execute: func(args: list<value>) -> expected<unit, sql-error>
-    query: func(args: list<value>) -> expected<rows, sql-error>
-}
